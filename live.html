@@ -1,0 +1,439 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Detect Faces Sample</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<script src="http://d3js.org/d3.v3.min.js" language="JavaScript"></script>
+	<script type="text/javascript" src="javascripts/webcam.min.js"></script>
+	<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js"></script>
+	<script src="https://unpkg.com/react@15.3.2/dist/react.js"></script>
+	<script src="https://www.webrtc-experiment.com/RecordRTC.js"></script>
+	<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+
+    <style type="text/css">
+		#header {
+			background-color: rgba(0,0,0,0.8);
+			width:100%;
+			padding-left: 60px;
+			padding-right: 60px;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right:0;
+		}
+		#front {
+			position: relative;
+			top: 27px;
+			left: 880px;
+			display: none;
+		}
+		#back {
+			position: relative;
+			top: 27px;
+			left: 880px;
+			display: inline-block;
+		}
+		#phone {
+			position: relative;
+			top: 17px;
+			left: 940px;
+			display: inline-block;
+		}
+		#btn-start-recording {
+			position: fixed;
+			top: 35px;
+			left: 1060px;
+			display: inline-block;
+		}
+		#btn-stop-recording {
+			position: fixed;
+			top: 35px;
+			left: 1060px;
+			display: none;
+		}
+		#video_display {
+			position: relative;
+			top: -560px;
+			left: 0;
+			z-index: 10;
+		}
+		#stat {
+			position: fixed;
+			top: 205px;
+			left: 1090px;
+		}
+		#Output_value{
+			position: fixed;
+			top: 280px;
+			left: 1210px;
+		}
+		#participants {
+			position: fixed;
+			top: 530px;
+			left: 1090px;
+		}
+		#no_people {
+			position: relative;
+			top: -20px;
+		}
+    </style>
+</head>
+<body>
+	<div id='header'>
+		<h3 style="font-weight:bold; font-family:'Segoe UI';font-size:42px;color:white;display: inline-block;">Live Meeting</h3>
+		<img id="btn-start-recording" width=70px src="pictures/record.png">
+		<img id="btn-stop-recording" width=70px src="pictures/stop-button.png">
+		<img id="front" src="pictures/flip.png" width=80px onClick="use_frontcam()">
+		<img id="back" src="pictures/flip.png" width=80px onClick="use_backcam()">
+		<img id="phone" src="pictures/phone-hang-up.png" width=70px" onClick="end()">
+	</div>
+	<div style="width100%;height:110px"></div>
+	<div>
+		<h2 id="Max" style="font-weight:bold;font-size:32px;padding-left: 60px;font-family:'Segoe UI'">Peak Participation: </h2>
+	</div>
+	<div style="padding-left:60px">
+		<div id="my_camera"></div>
+		<canvas id="video_display" width="960px" height="560px"></canvas>
+	</div>
+	<div id="stat">
+		<div class="chart-canvas">
+				<canvas id="openedCanvas" height=300px;></canvas>
+				<div id="Output_value">
+					 <p id="percentage" style=" display: inline-block;color:#a53606;font-size: 40px;font-weight:bold;font-family:'Segoe UI'">50</p>
+					 <p style="display: inline-block; color:#a53606;font-size: 22px;font-family:'Segoe UI'">%</p>
+					 <p id="text_label_1" style="color:#a53606;font-size: 22px;position: relative;top: -60px; right:30px;font-family:'Segoe UI'">Satisfaction</p>
+				</div>
+		</div>
+	</div>
+	<div id="participants">
+		<h2 style="font-family:'Segoe UI'"> Current No. of People </h2>
+		<p id="no_people" style="font-size:30px;width: 300px;font-family:'Segoe UI'"></p>
+	</div>
+    <form>
+        <input type=button id="snapauto" class="btn btn-primary" value="Take Snapshot" style="display: none" onClick="take_snapshot()">
+    </form>
+	<div style="display:none;">
+		<img id="angry" src="pictures/angry-512.png">
+		<img id="contempt" src="picturescontempt.png">
+		<img id="disgust" src="pictures/disgust.png">
+		<img id="fear" src="pictures/fear.png">
+		<img id="happy" src="pictures/happiness.png">
+		<img id="neutral" src="pictures/neutral.png">
+		<img id="sad" src="pictures/sad.png">
+		<img id="surprised" src="pictures/surprised.png">
+	</div>
+    <canvas id="viewport" width="960" height="560" style="display: none"></canvas>
+	<video style='display:none' controls autoplay playsinline></video>
+
+	<script type="text/javascript">
+	// Video Indexer credentials
+		//const accountId='3957c6d8-578f-46f3-855b-a6295e965b06'
+		const accountId='1ef7280b-20f4-4585-9994-8e64edebd4f6';
+		//const accessToken='nahhh'
+		const accessToken ='01f7e88a41e54f8d8c4860fbb1835317';
+		//const SUBSCRIPTION_KEY = '8ea86d4372a2494db43f0748b901ea7d'
+		var name = 'try'
+	// Screen Recording
+		var video = document.querySelector('video');
+		if(!navigator.getDisplayMedia && !navigator.mediaDevices.getDisplayMedia) {
+			var error = 'Your browser does NOT support the getDisplayMedia API.';
+			document.querySelector('video').style.display = 'none';
+			document.getElementById('btn-start-recording').style.display = 'none';
+			document.getElementById('btn-stop-recording').style.display = 'none';
+			throw new Error(error);
+		}
+		function invokeGetDisplayMedia(success, error) {
+			var displaymediastreamconstraints = {
+				video: {
+					displaySurface: 'monitor', // monitor, window, application, browser
+					logicalSurface: true,
+					cursor: 'always' // never, always, motion
+				}
+			};
+			// above constraints are NOT supported YET
+			// that's why overridnig them
+			displaymediastreamconstraints = {
+				video: false
+			};
+			if(navigator.mediaDevices.getDisplayMedia) {
+				navigator.mediaDevices.getDisplayMedia(displaymediastreamconstraints).then(success).catch(error);
+			}
+			else {
+				navigator.getDisplayMedia(displaymediastreamconstraints).then(success).catch(error);
+			}
+		}
+		function captureScreen(callback) {
+			invokeGetDisplayMedia(function(screen) {
+				addStreamStopListener(screen, function() {
+					document.getElementById('btn-stop-recording').click();
+				});
+				callback(screen);
+			}, function(error) {
+				console.error(error);
+				alert('Unable to capture your screen. Please check console logs.\n' + error);
+			});
+		}
+		function stopRecordingCallback() {
+			video.src = video.srcObject = null;
+			video.src = URL.createObjectURL(recorder.getBlob());
+			window.open(video.src)
+			recorder.screen.stop();
+			document.getElementById('btn-start-recording').disabled = false;
+			//recorder.destroy();
+			//recorder = null;
+		}
+		var recorder; // globally accessible
+		document.getElementById('btn-start-recording').onclick = function() {
+			document.getElementById('btn-stop-recording').style.display = "inline-block";
+			document.getElementById('btn-start-recording').style.display = "none";
+			captureScreen(function(screen) {
+				recorder = RecordRTC(screen, {
+					type: 'video'
+				});
+				recorder.startRecording();
+				// release screen on stopRecording
+				recorder.screen = screen;
+				document.getElementById('btn-stop-recording').disabled = false;
+			});
+		};
+		document.getElementById('btn-stop-recording').onclick = function() {
+			document.getElementById('btn-stop-recording').style.display = "none";
+			document.getElementById('btn-start-recording').style.display = "inline-block";
+			recorder.stopRecording(stopRecordingCallback);
+		};
+		function addStreamStopListener(stream, callback) {
+			stream.addEventListener('ended', function() {
+				callback();
+				callback = function() {};
+			}, false);
+			stream.addEventListener('inactive', function() {
+				callback();
+				callback = function() {};
+			}, false);
+			stream.getTracks().forEach(function(track) {
+				track.addEventListener('ended', function() {
+					callback();
+					callback = function() {};
+				}, false);
+				track.addEventListener('inactive', function() {
+					callback();
+					callback = function() {};
+				}, false);
+			});
+		}
+		
+		
+	//End Call 
+		function end() {
+				location.href='index.html'
+			}
+	//Set the max participants:
+		var max_people = 0;
+	// Click the snapshot button page load
+		window.onload=function(){
+			document.getElementById("snapauto").click();
+			setInterval(function(){ 
+                document.getElementById("snapauto").click();
+            }, 900);
+		};
+	// Set the front camera
+        Webcam.set({
+            width: 960,
+            height: 560,
+            image_format: 'jpeg',
+            jpeg_quality: 90
+        });
+		Webcam.attach('#my_camera');
+	// Switch to the front camera
+		function use_frontcam(){
+			Webcam.attach('#my_camera');
+			document.getElementById("front").style.display = "none";
+			document.getElementById("back").style.display = "inline-block";
+		}
+	// Prefer back camera resolution nearest to 1280x720.
+		var constraints = { audio: true, video: { width: 1280, height: 720 ,facingMode: { exact: "environment" }} }; 
+	// Switch to the back camera
+		function use_backcam(){
+		navigator.mediaDevices.getUserMedia(constraints)
+			.then(function(mediaStream) {
+				var video = document.querySelector('video');
+				video.srcObject = mediaStream;
+				video.onloadedmetadata = function(e) {
+					video.play();
+					document.getElementById("front").style.display = "inline-block";
+					document.getElementById("back").style.display = "none";
+				};
+			})
+			.catch(function(err) { console.log(err.name + ": " + err.message); }); // always check for errors at the end.
+		}
+	// Draw the snapshot of camera to canvas
+		var canvas = document.getElementById('viewport'),
+            context = canvas.getContext('2d');
+	// Load the images
+		var angry = document.getElementById('angry');
+		var contempt = document.getElementById('contempt');
+		var disgust = document.getElementById('disgust');
+		var fear = document.getElementById('fear');
+		var happy = document.getElementById('happy');
+		var neutral = document.getElementById('neutral');
+		var sad = document.getElementById('sad');
+		var surprised = document.getElementById('surprised');
+		
+		
+	// Draw the donut graph for emotion level
+		var deliveredData = {
+			datasets: [
+				{
+					data: [50, 50],
+					backgroundColor: [
+						"#a53606",
+						"rgba(0,0,0,0)"
+					],
+					hoverBackgroundColor: [
+						"#a53606",
+						"rgba(0,0,0,0)"
+					],
+					borderWidth: [
+						0, 0
+					]
+				}]
+		};
+		var deliveredOpt = {
+			responsive:true,
+			cutoutPercentage: 60,
+			animation: {
+				animationRotate: true,
+				duration: 2000
+			},
+			legend: {
+				display: true
+			},
+			tooltips: {
+				enabled: false
+			}
+		};
+		var chart = new Chart($('#openedCanvas'), {
+			type: 'doughnut',
+			data: deliveredData,
+			options: deliveredOpt
+		});
+	
+	
+	// Take the snap shot of the camera
+        function take_snapshot() {
+            // take snapshot and get image data
+            Webcam.snap(function (data_uri) {
+                base_image = new Image();
+                base_image.src = data_uri;
+                base_image.onload = function () {
+					context.drawImage(base_image, 0, 0, 960, 560);
+                    let data = canvas.toDataURL('image/jpeg');
+					var params = {
+						"returnFaceId": "true",
+						"returnFaceLandmarks": "false",
+						"returnFaceRectangle":'true',
+						"returnFaceAttributes":"gender,emotion" 
+					};
+					var c = document.getElementById("video_display"),
+						ctx = c.getContext("2d");
+                    fetch(data)
+                        .then(res => res.blob())
+                        .then(blobData => {
+							console.log(blobData);
+                            $.post({
+                                url: "https://southeastasia.api.cognitive.microsoft.com/face/v1.0/detect?" + $.param(params),
+                                contentType: "application/octet-stream",
+                                headers: {
+                                   'Ocp-Apim-Subscription-Key': "388a144055794f44b8df9ff9f7bfa94d"
+                                },
+                                processData: false,
+                                data: blobData
+                            })
+                            .done(function (data) {
+								//console.log(JSON.stringify(data, null, 4))
+                                //$("#results").text(JSON.stringify(data, null, 2));
+								ctx.clearRect(0,0,960,560)
+								var string = data
+								var arrayLength = string.length;
+								var overallevel = 0;
+								for (var i = 0; i < arrayLength; i++) {
+									console.log(string[i])
+									var emotionlevel = 0;
+									var position = string[i].faceRectangle;
+									var attributes = string[i].faceAttributes;
+								// draw the face detection boxes
+									ctx.beginPath();
+									ctx.lineWidth = "4";
+									ctx.strokeStyle = "blue";
+									ctx.rect(position.left,position.top,position.width,position.height);
+									ctx.stroke();
+									var emotion = attributes.emotion;
+								// draw the emoji and calculate emotion level
+									var highest = Object.keys(emotion).reduce(function(a, b){ return emotion[a] > emotion[b] ? a : b })
+									switch (highest){
+										case "neutral":
+											ctx.drawImage(neutral, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.neutral*50 + (emotion.happiness - emotion.anger - emotion.sadness)*15 + (emotion.surprise - emotion.contempt - emotion.disgust - emotion.fear)*25
+											break;
+										case "happiness":
+											ctx.drawImage(happy, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.happiness*80 + (emotion.neutral - emotion.anger - emotion.sadness)*15 + (emotion.surprise - emotion.contempt - emotion.disgust - emotion.fear)*5
+											break;
+										case "sadness":
+											ctx.drawImage(sad, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.sadness*15 + (emotion.happiness - emotion.anger + emotion.neutral)*15 + (emotion.surprise - emotion.contempt - emotion.disgust - emotion.fear)*5
+											break;
+										case "surprise":
+											ctx.drawImage(surprised, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.surprise*50 + (emotion.happiness - emotion.anger - emotion.sadness)*15 + (emotion.neutral - emotion.contempt - emotion.disgust - emotion.fear)*5
+											break;
+										case "anger":
+											ctx.drawImage(angry, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.anger*5 + (emotion.happiness + emotion.neutral - emotion.sadness)*15 + (emotion.surprise - emotion.contempt - emotion.disgust - emotion.fear)*5
+											break;
+										case "fear":
+											ctx.drawImage(fear, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.fear*5 + (emotion.happiness - emotion.anger - emotion.sadness)*15 + (emotion.surprise - emotion.contempt - emotion.disgust + emotion.neutral)*5
+											break;
+										case "disgust":
+											ctx.drawImage(disgust, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.disgust*10 + (emotion.happiness - emotion.anger - emotion.sadness)*15 + (emotion.surprise - emotion.contempt + emotion.neutral - emotion.fear)*5
+											break;
+										case "contempt":
+											ctx.drawImage(contempt, position.left+position.width/2-20, position.top-40, 40,35)
+											emotionlevel = emotion.contempt*20 + (emotion.happiness - emotion.anger - emotion.sadness)*15 + (emotion.surprise - emotion.neutral - emotion.disgust - emotion.fear)*5
+											break;
+									};
+									overallevel = overallevel + emotionlevel
+								};
+								overallevel = Math.round(overallevel/arrayLength);
+							// update the graph
+								chart.data.datasets[0].data[0] = overallevel;
+								chart.data.datasets[0].data[1] = 100-overallevel;
+								chart.update()
+								document.getElementById("percentage").innerHTML = overallevel;
+							// draw the amount of people
+								var emoji = "&#128100";
+								var drawpeople = emoji.repeat(arrayLength);
+								document.getElementById("no_people").innerHTML = drawpeople;
+							// update the max participants
+								if (arrayLength>max_people){
+									max_people = arrayLength
+									var Output_string = "Peak Participation: "+max_people;
+									document.getElementById("Max").innerHTML = Output_string;
+								}			
+							})
+                            .fail(function (err) {
+                                console.log(JSON.stringify(err));
+                            })
+                        });
+                }
+            });
+        };
+    </script>
+</body>
+</html>

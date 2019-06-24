@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta charset="utf-8" />
+		<title>Start Meeting</title>
+		<style type="text/css">
+		body, html {
+			height: 100%;
+			margin: 0;
+		}
+
+		.bg {
+			background-image: url("pictures/front_page_background_1.png");
+			height: 100%; 
+			background-position: center;
+			background-repeat: no-repeat;
+			background-size: cover;
+			background-color: rgba(255,255,255,0.3);
+			background-blend-mode: lighten;
+		}
+		#logo {
+			width: 200px;
+			position: absolute;
+			top: -40px;
+			right: 40px;
+		}
+		#buttons{
+			position: absolute;
+			left: 40%;
+			top: 40%;
+		}
+		.button {
+			background-color: rgba(0,0,0,0.7);
+		    border: none;
+		    color: white;
+		    padding-left: 80px;
+			padding-right: 80px;
+			padding-top: 20px;
+			padding-bottom: 20px;
+		    text-align: center;
+		    text-decoration: none;
+		    display: inline-block;
+		    font-size: 16px;
+		    margin: 4px 2px;
+		    cursor: pointer;
+			border-radius: 36px;
+			font-size: 24px;
+			font-weight: bold;
+		}
+		#meeting_detail_form {
+			padding-left: 60px;
+			padding-right: 60px;
+			padding-top: 10px;
+			padding-bottom: 20px;
+			background-color: rgba(255,255,255,0.8);
+			position: absolute;
+			left: 35%;
+			top: 30%;
+			border-radius: 18px;
+			display:none;
+		}
+		label{
+			display: inline-block;
+			float: left;
+			clear: left;
+			width: 180px;
+			font-size:20px;
+			font-weight: bold;
+		}
+		input {
+			display: inline-block;
+			float: left;
+			border-radius: 4px;
+		}
+		#submit {
+		    background-color: #16bc27;
+		    border: none;
+		    color: white;
+		    padding-left: 20px;
+			padding-right: 20px;
+			padding-top: 10px;
+			padding-bottom: 10px;
+		    text-decoration: none;
+		    margin: 4px 2px;
+		    cursor: pointer;
+			border-radius: 12px;
+			font-size: 16px;
+			font-weight: bold;
+			width:100px;
+		}
+		#back {
+			left: 20px;
+		    background-color: #1e6be8;
+		    border: none;
+		    color: white;
+		    padding-left: 20px;
+			padding-right: 20px;
+			padding-top: 10px;
+			padding-bottom: 10px;
+		    text-decoration: none;
+		    margin: 4px 2px;
+		    cursor: pointer;
+			border-radius: 12px;
+			font-size: 16px;
+			font-weight: bold;
+			width:100px;
+		}
+		</style>
+	</head>
+	<body>
+		<div class="bg">
+			<img id="logo" src="pictures/logo.png">
+			<div id='buttons'>
+				<button id="join meeting" class='button' style="font-family:'Segoe UI';font-size:28px" onclick=form_display()>Join Meeting</button>
+				<br><br>
+				<button id="start meeting" class='button' onclick=real_life_demo() style="font-family:'Segoe UI';font-size:28px">Live Meeting</button>
+			</div>
+			<div id="meeting_detail_form">
+				<h1 style="font-size:36px;font-family:'Segoe UI'"> Join Meeting by Code </h1>
+				<form id="frmTest">
+					<label style="font-family:'Segoe UI';font-size:18px">Meeting Code:</label><input type="text" id="code" ><br><br><br>
+					<label style="font-family:'Segoe UI';font-size:18px">No. of Participants:</label><input type="number" id="people" ><br>
+				</form>
+				<br><br>
+				<button id="submit" onclick=skype() style="font-family:'Segoe UI'">Join</button>
+				<button id="back" onclick=go_back() style="font-family:'Segoe UI'">Back</button>
+			</div>
+		</div>
+		<script type="text/javascript">
+			var code = document.getElementById("code");
+			var people = document.getElementById("people");
+			document.getElementById('submit').addEventListener('click',store_data);
+			function store_data(){ // Store value from input field to local store
+				localStorage.setItem( 'objectToPass1', code.value );
+				localStorage.setItem( 'objectToPass2', people.value );
+			}
+			function real_life_demo() {
+				location.href='live.html'
+			}
+			function skype() {
+				location.href='skype.html'
+			}
+			function form_display() {
+				document.getElementById("join meeting").style.display = "none";
+				document.getElementById("start meeting").style.display = "none";
+				document.getElementById("meeting_detail_form").style.display = "block";
+			}
+			function go_back() {
+				document.getElementById("join meeting").style.display = "block";
+				document.getElementById("start meeting").style.display = "block";
+				document.getElementById("meeting_detail_form").style.display = "none";
+			}
+			
+		</script>
+	</body>
+</html>
